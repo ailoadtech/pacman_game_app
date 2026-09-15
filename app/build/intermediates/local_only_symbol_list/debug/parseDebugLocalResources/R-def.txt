@@ -1,0 +1,16 @@
+R_DEF: Internal format may change without notice
+local
+drawable control_btn
+drawable ic_launcher
+id btnDown
+id btnLeft
+id btnRight
+id btnUp
+id gameView
+id levelText
+id livesText
+id scoreText
+layout activity_main
+raw pac_music
+string app_name
+style AppTheme
