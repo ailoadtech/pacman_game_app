@@ -624,6 +624,7 @@ drawable ic_call_answer_video
 drawable ic_call_answer_video_low
 drawable ic_call_decline
 drawable ic_call_decline_low
+drawable ic_ghost_toggle
 drawable ic_launcher
 drawable notification_action_background
 drawable notification_bg
@@ -732,6 +733,7 @@ id expanded_menu
 id forever
 id fragment_container_view_tag
 id gameView
+id ghostToggleBtn
 id group_divider
 id hide_ime_id
 id home

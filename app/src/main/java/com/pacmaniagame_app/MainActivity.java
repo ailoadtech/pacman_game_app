@@ -27,6 +27,14 @@ public class MainActivity extends Activity {
         attachButton(R.id.btnRight, GameView.DIR_RIGHT);
         attachButton(R.id.btnUp, GameView.DIR_UP);
         attachButton(R.id.btnDown, GameView.DIR_DOWN);
+
+        // Single-tap ghost icon next to the score toggles ghost mode.
+        findViewById(R.id.ghostToggleBtn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gameView.toggleGhostMode();
+            }
+        });
     }
 
     private void attachButton(final int buttonId, final int dir) {

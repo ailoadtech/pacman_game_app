@@ -1,12 +1,14 @@
 R_DEF: Internal format may change without notice
 local
 drawable control_btn
+drawable ic_ghost_toggle
 drawable ic_launcher
 id btnDown
 id btnLeft
 id btnRight
 id btnUp
 id gameView
+id ghostToggleBtn
 id levelText
 id livesText
 id scoreText

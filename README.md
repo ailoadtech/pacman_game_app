@@ -5,6 +5,8 @@ A small Android clone of **Pac-Man**.
 Pac-Man is steered through a procedurally-generated maze using on-screen buttons. 
 Eat every dot (and the big power dots) to clear the level; each level grows the maze and adds more ghosts.
 
+There is also a hidden **Ghost Mode**: tap the little red ghost icon next to the score to swap roles. You then steer the single red ghost yourself while Pac-Man plays itself automatically, eating dots and diamonds - your job is to catch him.
+
 ## Screenshot
 ![App Screenshot](screenshot.png)
 
@@ -14,7 +16,8 @@ Eat every dot (and the big power dots) to clear the level; each level grows the 
   - Bottom-left corner: **← Left**
   - Bottom-right corner: **→ Right**
   - Center (stacked): **▲ Up** on top, **▼ Down** below.
-  - Hold a direction to run; release to stop.
+  - Hold a direction to run; release to stop. These same buttons also steer the red ghost in Ghost Mode.
+- **Ghost icon** (small red ghost) at the top-left, next to the score: tap once to enter or leave **Ghost Mode**.
 - Tap anywhere on the **Game Over** screen to restart.
 
 ## Features
@@ -27,6 +30,7 @@ Eat every dot (and the big power dots) to clear the level; each level grows the 
 - Power pellets: eat one to turn ghosts blue, then eat them for bonus points before they recover.
 - **Yellow diamonds** are scattered around the maze (3 on level 1, up to 6 on later levels). Eating one grants an **extra life** and +100 points. They don't count toward the dots needed to clear a level.
 - Secret cheat: tap the **"Lives"** text in the top-right corner **three times** to set lives to **99**.
+- **Ghost Mode**: tap the red ghost icon next to the score (or tap the **"Score"** text three times) to switch roles. You control the lone red ghost; Pac-Man runs on autopilot, eating dots and diamonds. Catch him for **+500** and to clear the round. In this mode there are no other ghosts, power pellets never frighten your ghost, and the chase balance is tuned so Pac-Man stays catchable.
 - **Scatter / chase** ghost AI with alternating behavior phases, so Pac-Man has plenty of room to escape.
 - **Warp tunnels** appear on later levels (horizontal from level 3, vertical from level 6) — drive through one side and emerge on the other.
 - Background chiptune music plays while you play.
@@ -65,12 +69,12 @@ app/
   src/main/
     AndroidManifest.xml
     java/com/pacmaniagame_app/
-        MainActivity.java        # HUD + button wiring
-        GameView.java            # game loop, maze, movement, AI, rendering
+        MainActivity.java        # HUD + button wiring (incl. ghost toggle)
+        GameView.java            # game loop, maze, movement, AI, ghost mode, rendering
     res/
         layout/activity_main.xml
         values/  strings.xml, themes.xml
-        drawable/  control_btn.xml, ic_launcher.xml
+        drawable/  control_btn.xml, ic_launcher.xml, ic_ghost_toggle.xml
         raw/  pac_music.wav      # generated chiptune loop
 ```
 
@@ -79,6 +83,7 @@ app/
 - The game uses a single custom `View` and a manual game loop driven by `postInvalidateOnAnimation()`. There are **no third-party dependencies** or game engines.
 - Movement is tile-based: every entity occupies a floor tile and only steps into adjacent open tiles.
 - The music asset (`app/src/main/res/raw/pac_music.wav`) is a short original chiptune loop; it can be regenerated with the bundled Python synthesizer if desired.
+- Ghost Mode reuses the same tile-based movement as Pac-Man. When `ghostMode` is on, the single red ghost is driven by the on-screen buttons via `playerGhostArrive()`, and Pac-Man chooses its own direction with `autoPacDirection()`. Note that `advance()` dispatches to the correct "arrive" handler per entity and mode - keep that routing intact or player steering of the ghost will silently fall back to the AI.
 
 ## About
 

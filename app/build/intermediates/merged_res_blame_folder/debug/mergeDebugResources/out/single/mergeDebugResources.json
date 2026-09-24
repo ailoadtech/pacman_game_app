@@ -1,18 +1,26 @@
 [
     {
-        "merged": "com.pacmaniagame_app-debug-20:/raw_pac_music.wav.flat",
-        "source": "com.pacmaniagame_app-main-22:/raw/pac_music.wav"
+        "merged": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-debug-20:/drawable_ic_launcher.xml.flat",
+        "source": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-main-22:/drawable/ic_launcher.xml"
     },
     {
         "merged": "com.pacmaniagame_app-debug-20:/layout_activity_main.xml.flat",
         "source": "com.pacmaniagame_app-main-22:/layout/activity_main.xml"
     },
     {
-        "merged": "com.pacmaniagame_app-debug-20:/drawable_ic_launcher.xml.flat",
-        "source": "com.pacmaniagame_app-main-22:/drawable/ic_launcher.xml"
+        "merged": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-debug-20:/drawable_control_btn.xml.flat",
+        "source": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-main-22:/drawable/control_btn.xml"
     },
     {
-        "merged": "com.pacmaniagame_app-debug-20:/drawable_control_btn.xml.flat",
-        "source": "com.pacmaniagame_app-main-22:/drawable/control_btn.xml"
+        "merged": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-debug-20:/layout_activity_main.xml.flat",
+        "source": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-main-22:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.pacmaniagame_app-debug-20:/drawable_ic_ghost_toggle.xml.flat",
+        "source": "com.pacmaniagame_app-main-22:/drawable/ic_ghost_toggle.xml"
+    },
+    {
+        "merged": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-debug-20:/raw_pac_music.wav.flat",
+        "source": "/home/franks/.gradle/daemon/8.4/com.pacmaniagame_app-main-22:/raw/pac_music.wav"
     }
 ]

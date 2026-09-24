@@ -64,6 +64,14 @@ public class GameView extends View {
     private static final long LIVES_CHEAT_WINDOW_MS = 1500L;
     private static final int LIVES_CHEAT_VALUE = 99;
 
+    // Role switch: tapping the Score text three times swaps roles. The player
+    // steers the single red ghost and must catch the auto-playing Pac-Man.
+    private int scoreTapCount = 0;
+    private long lastScoreTapMs = 0L;
+    private static final int SCORE_CHEAT_TAPS = 3;
+    private static final long SCORE_CHEAT_WINDOW_MS = 1500L;
+    private boolean ghostMode = false;
+
     private int viewW;
     private int viewH;
     private int cols;
@@ -164,6 +172,14 @@ public class GameView extends View {
                 }
             });
         }
+        if (scoreText != null) {
+            scoreText.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onScoreClicked();
+                }
+            });
+        }
         updateHud();
     }
 
@@ -192,6 +208,54 @@ public class GameView extends View {
             lives = LIVES_CHEAT_VALUE;
         }
         updateHud();
+    }
+
+    /**
+     * Role-switch entry point: called when the Score text in the HUD is tapped.
+     * Three taps within a short window toggle ghost mode, where the player steers
+     * the red ghost and Pac-Man plays itself automatically.
+     */
+    private void onScoreClicked() {
+        long now = System.currentTimeMillis();
+        if (now - lastScoreTapMs > SCORE_CHEAT_WINDOW_MS) {
+            scoreTapCount = 0;
+        }
+        lastScoreTapMs = now;
+        scoreTapCount++;
+        if (scoreTapCount >= SCORE_CHEAT_TAPS) {
+            scoreTapCount = 0;
+            lastScoreTapMs = 0L;
+            activateGhostMode();
+        }
+    }
+
+    private void activateGhostMode() {
+        toggleGhostMode();
+    }
+
+    /**
+     * Public entry point used by the on-screen ghost button (and the three-tap
+     * Score shortcut) to switch between normal play and ghost mode.
+     */
+    public void toggleGhostMode() {
+        ghostMode = !ghostMode;
+        // Rebuild the level so the new role setup takes effect immediately.
+        steerDir = -1;
+        lastPressedDir = -1;
+        for (int d = 0; d < 4; d++) {
+            pressed[d] = false;
+        }
+        initLevel();
+        resetPositions();
+        state = STATE_READY;
+        stateTime = 0f;
+        updateHud();
+        invalidate();
+    }
+
+    /** True while the player is steering the red ghost. */
+    public boolean isGhostMode() {
+        return ghostMode;
     }
 
     public void pressDirection(int dir) {
@@ -340,6 +404,10 @@ public class GameView extends View {
 
     private void initLevel() {
         ghostCount = Math.min(1 + level, 8);
+        if (ghostMode) {
+            // Role switch: only the single red ghost exists and the player steers it.
+            ghostCount = 1;
+        }
         int cw = Math.min(6 + (level - 1), 16);
         int ch = Math.min(5 + (level - 1), 13);
         cols = cw * 2 + 1;
@@ -382,7 +450,10 @@ public class GameView extends View {
             }
         }
 
-        pac = new Mob(pr, pc, 6.2f);
+        // In ghost mode the auto-Pac-Man must be slower than the player-steered
+        // red ghost so it stays catchable; otherwise it uses the normal fast speed.
+        float pacSpeed = ghostMode ? 3.0f : 6.2f;
+        pac = new Mob(pr, pc, pacSpeed);
 
         int[] offsets = {0, -1, 1, -2, 2, -3, 3, -4};
         ghosts = new Mob[ghostCount];
@@ -394,7 +465,14 @@ public class GameView extends View {
             g.ghostId = i;
             g.homeR = gr;
             g.homeC = gc;
-            g.freeze = 1.6f + i * 1.3f;
+            if (ghostMode) {
+                // Player-controlled ghost starts active immediately and moves
+                // fast enough to actually catch the auto-Pac-Man.
+                g.freeze = 0f;
+                g.speed = 4.4f;
+            } else {
+                g.freeze = 1.6f + i * 1.3f;
+            }
             ghosts[i] = g;
         }
 
@@ -698,6 +776,18 @@ public class GameView extends View {
             if (m.freeze > 0f) {
                 return;
             }
+            if (ghostMode) {
+                // The player controls the red ghost with the on-screen buttons.
+                // Use the ghost's full base speed (never frightened/slowed) so
+                // steering stays responsive while chasing the auto-Pac-Man.
+                m.ghostState = GHOST_NORMAL;
+                if (m.moving) {
+                    advance(m, dt, m.speed);
+                } else {
+                    playerGhostArrive(m);
+                }
+                return;
+            }
             if (m.moving) {
                 advance(m, dt, effectiveGhostSpeed(m));
             } else {
@@ -725,6 +815,8 @@ public class GameView extends View {
             m.moving = false;
             if (m == pac) {
                 pacArrive();
+            } else if (ghostMode) {
+                playerGhostArrive(m);
             } else {
                 ghostArrive(m);
             }
@@ -742,6 +834,8 @@ public class GameView extends View {
             m.moving = false;
             if (m == pac) {
                 pacArrive();
+            } else if (ghostMode) {
+                playerGhostArrive(m);
             } else {
                 ghostArrive(m);
             }
@@ -756,6 +850,17 @@ public class GameView extends View {
             return;
         }
         eatTileAt(pac.r, pac.c);
+        if (ghostMode) {
+            // Pac-Man plays itself: pick a direction automatically.
+            int auto = autoPacDirection();
+            if (auto >= 0) {
+                startMove(pac, auto);
+            } else {
+                pac.dir = -1;
+                pac.moving = false;
+            }
+            return;
+        }
         int want = steerDir;
         if (want >= 0 && openCell(pac.r, pac.c, want)) {
             startMove(pac, want);
@@ -763,6 +868,83 @@ public class GameView extends View {
             pac.dir = -1;
             pac.moving = false;
         }
+    }
+
+    /**
+     * Chooses Pac-Man's next move while it is on autopilot (ghost mode). It keeps
+     * going straight when possible, otherwise turns toward the nearest remaining
+     * dot, preferring to continue eating rather than reversing.
+     */
+    private int autoPacDirection() {
+        int[] order = rndOrder(4);
+        int best = -1;
+        int bestScore = Integer.MAX_VALUE;
+        for (int k = 0; k < 4; k++) {
+            int d = order[k];
+            if (!openCell(pac.r, pac.c, d)) {
+                continue;
+            }
+            int[] nb = stepCell(pac.r, pac.c, d);
+            int nr = nb[0];
+            int nc = nb[1];
+            // Prefer tiles with food; break ties by distance to any dot.
+            int s = 1000;
+            int t = tile[nr][nc];
+            if (t == DOT || t == POWER || t == DIAMOND) {
+                s = 0;
+            } else {
+                s = nearestFoodDistance(nr, nc);
+            }
+            // Slight bonus for continuing straight to reduce jitter.
+            if (d == pac.dir) {
+                s -= 1;
+            }
+            if (s < bestScore) {
+                bestScore = s;
+                best = d;
+            }
+        }
+        return best;
+    }
+
+    private int nearestFoodDistance(int r, int c) {
+        int best = Integer.MAX_VALUE;
+        for (int rr = 0; rr < rows; rr++) {
+            for (int cc = 0; cc < cols; cc++) {
+                int t = tile[rr][cc];
+                if (t == DOT || t == POWER || t == DIAMOND) {
+                    int dist = Math.abs(rr - r) + Math.abs(cc - c);
+                    if (dist < best) {
+                        best = dist;
+                    }
+                }
+            }
+        }
+        return best == Integer.MAX_VALUE ? 500 : best;
+    }
+
+    /**
+     * Player-steered red ghost in ghost mode: mirrors Pac-Man's own input handling
+     * so the on-screen buttons drive the ghost instead of the AI.
+     */
+    private void playerGhostArrive(Mob g) {
+        if (state != STATE_PLAYING) {
+            return;
+        }
+        int want = steerDir;
+        // Prefer the direction the player is holding.
+        if (want >= 0 && openCell(g.r, g.c, want)) {
+            startMove(g, want);
+            return;
+        }
+        // Otherwise keep coasting in the current heading if possible, so the
+        // ghost does not jerk to a stop between tiles while turning.
+        if (g.dir >= 0 && openCell(g.r, g.c, g.dir)) {
+            startMove(g, g.dir);
+            return;
+        }
+        g.dir = -1;
+        g.moving = false;
     }
 
     private void eatTileAt(int r, int c) {
@@ -783,13 +965,18 @@ public class GameView extends View {
             tile[r][c] = EMPTY;
             remainingDots--;
             score += 50;
-            frightTime = 7.0f;
-            for (int i = 0; i < ghostCount; i++) {
-                Mob g = ghosts[i];
-                if (g.ghostState != GHOST_EATEN && g.freeze <= 0f) {
-                    g.ghostState = GHOST_FRIGHTENED;
+            if (!ghostMode) {
+                // Normal mode: power pellets frighten the AI ghosts (turn them blue).
+                frightTime = 7.0f;
+                for (int i = 0; i < ghostCount; i++) {
+                    Mob g = ghosts[i];
+                    if (g.ghostState != GHOST_EATEN && g.freeze <= 0f) {
+                        g.ghostState = GHOST_FRIGHTENED;
+                    }
                 }
             }
+            // In ghost mode the player IS the red ghost, so it must never be
+            // frightened/slowed here - that would break steering and catching.
             rebuildLayer();
             updateHud();
         }
@@ -921,6 +1108,14 @@ public class GameView extends View {
                 continue;
             }
             if (g.r == pac.r && g.c == pac.c) {
+                if (ghostMode) {
+                    // The player (as the red ghost) caught the auto-Pac-Man.
+                    score += 500;
+                    updateHud();
+                    state = STATE_LEVEL_CLEAR;
+                    stateTime = 0f;
+                    break;
+                }
                 if (frightTime > 0f) {
                     score += 200;
                     g.ghostState = GHOST_EATEN;
@@ -1200,7 +1395,11 @@ public class GameView extends View {
                 canvas.drawText("READY!", cx, cy - 20f * density, textPaint);
                 textPaint.setColor(Color.WHITE);
                 textPaint.setTextSize(18f * density);
-                canvas.drawText("Hold buttons to move, release to stop", cx, cy + 20f * density, textPaint);
+                if (ghostMode) {
+                    canvas.drawText("You are the red ghost - catch Pac-Man!", cx, cy + 20f * density, textPaint);
+                } else {
+                    canvas.drawText("Hold buttons to move, release to stop", cx, cy + 20f * density, textPaint);
+                }
                 break;
             case STATE_DYING:
                 textPaint.setColor(Color.rgb(255, 120, 120));
