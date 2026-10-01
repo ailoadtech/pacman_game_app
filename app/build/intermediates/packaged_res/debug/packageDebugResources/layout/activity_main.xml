@@ -57,6 +57,17 @@
             android:textColor="#FF7F50"
             android:textSize="16sp"
             android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/soundToggleBtn"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="6dp"
+            android:padding="2dp"
+            android:scaleType="fitCenter"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_sound_on"
+            android:contentDescription="Toggle sound" />
     </LinearLayout>
 
     <FrameLayout

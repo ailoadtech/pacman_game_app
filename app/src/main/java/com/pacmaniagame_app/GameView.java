@@ -71,6 +71,11 @@ public class GameView extends View {
     private static final int SCORE_CHEAT_TAPS = 3;
     private static final long SCORE_CHEAT_WINDOW_MS = 1500L;
     private boolean ghostMode = false;
+    // Ghost mode: one queued single-tile step per button press (no auto-coast).
+    private int ghostStepDir = -1;
+
+    // Sound toggle (top bar button). Music only plays when this is true.
+    private boolean soundEnabled = true;
 
     private int viewW;
     private int viewH;
@@ -242,6 +247,7 @@ public class GameView extends View {
         // Rebuild the level so the new role setup takes effect immediately.
         steerDir = -1;
         lastPressedDir = -1;
+        ghostStepDir = -1;
         for (int d = 0; d < 4; d++) {
             pressed[d] = false;
         }
@@ -263,6 +269,10 @@ public class GameView extends View {
         pressed[dir] = true;
         lastPressedDir = dir;
         steerDir = dir;
+        if (ghostMode) {
+            // One button press = one tile step for the player-steered ghost.
+            ghostStepDir = dir;
+        }
     }
 
     public void releaseDirection(int dir) {
@@ -293,6 +303,11 @@ public class GameView extends View {
 
     private void startMusic() {
         if (getContext() == null) {
+            return;
+        }
+        if (!soundEnabled) {
+            // Sound was turned off from the top bar - keep it silent.
+            pauseMusic();
             return;
         }
         if (music == null) {
@@ -326,6 +341,26 @@ public class GameView extends View {
                 // ignore audio errors
             }
         }
+    }
+
+    /**
+     * Toggle background music on/off from the top bar sound button.
+     * Returns the new enabled state so the UI can update its icon.
+     */
+    public boolean toggleSound() {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled) {
+            if (state == STATE_PLAYING) {
+                startMusic();
+            }
+        } else {
+            pauseMusic();
+        }
+        return soundEnabled;
+    }
+
+    public boolean isSoundEnabled() {
+        return soundEnabled;
     }
 
     @Override
@@ -931,16 +966,13 @@ public class GameView extends View {
         if (state != STATE_PLAYING) {
             return;
         }
-        int want = steerDir;
-        // Prefer the direction the player is holding.
-        if (want >= 0 && openCell(g.r, g.c, want)) {
-            startMove(g, want);
-            return;
-        }
-        // Otherwise keep coasting in the current heading if possible, so the
-        // ghost does not jerk to a stop between tiles while turning.
-        if (g.dir >= 0 && openCell(g.r, g.c, g.dir)) {
-            startMove(g, g.dir);
+        // Ghost mode uses step-by-step control: the red ghost moves exactly ONE
+        // tile per button press and then stops. It never coasts forward on its
+        // own, which makes precise left/right steering much easier.
+        if (ghostStepDir >= 0 && openCell(g.r, g.c, ghostStepDir)) {
+            int d = ghostStepDir;
+            ghostStepDir = -1;   // consume the queued single step
+            startMove(g, d);
             return;
         }
         g.dir = -1;

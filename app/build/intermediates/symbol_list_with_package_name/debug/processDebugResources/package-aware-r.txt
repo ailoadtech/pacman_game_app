@@ -626,6 +626,8 @@ drawable ic_call_decline
 drawable ic_call_decline_low
 drawable ic_ghost_toggle
 drawable ic_launcher
+drawable ic_sound_off
+drawable ic_sound_on
 drawable notification_action_background
 drawable notification_bg
 drawable notification_bg_low
@@ -787,6 +789,7 @@ id shortcut
 id showCustom
 id showHome
 id showTitle
+id soundToggleBtn
 id spacer
 id special_effects_controller_view_tag
 id split_action_bar

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
@@ -33,6 +34,16 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 gameView.toggleGhostMode();
+            }
+        });
+
+        // Top-bar speaker icon enables/disables background music.
+        final ImageButton soundBtn = (ImageButton) findViewById(R.id.soundToggleBtn);
+        soundBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean on = gameView.toggleSound();
+                soundBtn.setImageResource(on ? R.drawable.ic_sound_on : R.drawable.ic_sound_off);
             }
         });
     }

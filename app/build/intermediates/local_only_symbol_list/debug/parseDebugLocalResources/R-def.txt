@@ -3,6 +3,8 @@ local
 drawable control_btn
 drawable ic_ghost_toggle
 drawable ic_launcher
+drawable ic_sound_off
+drawable ic_sound_on
 id btnDown
 id btnLeft
 id btnRight
@@ -12,6 +14,7 @@ id ghostToggleBtn
 id levelText
 id livesText
 id scoreText
+id soundToggleBtn
 layout activity_main
 raw pac_music
 string app_name
